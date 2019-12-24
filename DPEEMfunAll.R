@@ -6,6 +6,7 @@ PackageCheck = function(Name)
     install.packages(Name)
   }
 }
+
 PackageCheck('dplyr');
 PackageCheck('purrr');
 PackageCheck('tidyr');
@@ -17,8 +18,8 @@ library(dplyr);library(purrr);library(tidyr);library(tibble);library(readr);libr
 
 ##### SV
 funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, baseline,
-              Ylab = 'DV', Xlab = 'IV', xp = perbinMax-(perbinMax-perbinMin)/5, Cex = 0.8, Bty = 'n',
-              Width = 680, Height = 370)
+                 Ylab = 'DV', Xlab = 'IV', xp = perbinMax-(perbinMax-perbinMin)/5, Cex = 0.8, Bty = 'n',
+                 Width = 680, Height = 370)
 {
   ########### package check
   PackageCheck = function(Name)
@@ -27,11 +28,10 @@ funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, 
                    Name)) == 0) {
       install.packages(Name)
     }
-  }
   
   DataRaw = read_csv(Data)
   CondUnique = unique(DataRaw[[2]])
-  
+  } 
   for(i in CondUnique){
     eval(parse(text = paste(i,'perbin = matrix(0,nrow = bootstrapNumber, ncol = perbinMax-perbinMin+1)', sep = '')))
   }
@@ -78,7 +78,7 @@ funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, 
       check = 1;break
     }
   }
-  if(check == 1)
+   if(check == 1)
   {
     cat('The first time point is ',TimePoint,' ms.\n')
     eval(parse(text = paste(CondUnique[-1 * which(CondUnique %in% baseline)],'perbinA = numeric()', sep = '')))
@@ -162,24 +162,21 @@ funpreprocess <-
     Tstart0 = c()
     Tend0 = c()
     
-    for(i in csvfilename)
-    {
+    for(i in csvfilename){
       tempsubfile = read.csv(i, sep = ' ', header = F)
       if(ncol(tempsubfile) <2){
         tempsubfile = read.csv(i, sep = '\t', header = F)
       }
-      for(j in 1:nrow(tempsubfile))
-      {
+      for(j in 1:nrow(tempsubfile)){
         templine = tempsubfile[j,]
         templine = templine[,!is.na(templine)]
-        if(ncol(templine) > 8 | templine[[3]] > 199)
+        if(ncol(templine) > 8 | templine[[3]] > 999) # edit
         {
-          if(templine[[3]] < 199)
+          if(templine[[3]] < 999) # edit
           {
             numberfixation = (ncol(templine)-8)/4
             
-            for(k in 1:numberfixation)
-            {
+            for(k in 1:numberfixation){
               sub0 = c(sub0, substr(i,1,nchar(i)-4))
               cond0 = c(cond0, templine[[2]])
               item0 = c(item0, templine[[3]])
@@ -188,12 +185,9 @@ funpreprocess <-
               Tstart0 = c(Tstart0, templine[[4*k+7]])
               Tend0 = c(Tend0, templine[[4*k+8]])
             }
-          }
-          else
-          {
+          }else{
             numberfixation = ncol(templine)/4
-            for(k in 1:numberfixation)
-            {
+            for(k in 1:numberfixation){
               sub0 = c(sub0, substr(i,1,nchar(i)-4))
               cond0 = c(cond0, templine[j-1,][[2]])
               item0 = c(item0, tempsubfile[j-1,][[3]])
@@ -215,7 +209,7 @@ funpreprocess <-
     {
       FTtotal$cond0[i] = FTtotal$cond0[i-1]
     }
-    largeitemp = which(FTtotal$item0 >= 199)
+    largeitemp = which(FTtotal$item0 >= 999)
     for(i in largeitemp)
     {
       FTtotal$item0[i] = FTtotal$item0[i-1]
@@ -456,13 +450,13 @@ funROITTFFD <-
     cat('Calculating the first fixation duration and total time...\n')
     
     read_csv('FTtotalASRptReg.csv') %>% 
-    mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
-    filter(ROI0 == T) %>% 
-    group_by(Sub, Cond, Item) %>% 
-    mutate(ROIFI = 1:length(FFT)) %>% 
-    select(-xcoor0, -ycoor0, -Tstart0, -Tend0) %>% 
-    summarise(TotalTime = sum(FFT), FFD = FFT[ROIFI == 1]) %>%
-    write_csv('ROITT&FFD.csv')
+      mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
+      filter(ROI0 == T) %>% 
+      group_by(Sub, Cond, Item) %>% 
+      mutate(ROIFI = 1:length(FFT)) %>% 
+      select(-xcoor0, -ycoor0, -Tstart0, -Tend0) %>% 
+      summarise(TotalTime = sum(FFT), FFD = FFT[ROIFI == 1]) %>%
+      write_csv('ROITT&FFD.csv')
     
     cat('Totaltime and first fixation duration have been done','\n\n')
     
@@ -480,11 +474,11 @@ funFTROInum <-
     cat('Calculating the number of fixation potint in ROI...\n')
     
     read_csv('FTtotalASRptReg.csv') %>% 
-    mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
-    group_by(Sub, Cond, Item) %>% 
-    summarise(FixationNum = length(ROI0[ROI0 == T]), 
-            FixationProp = length(ROI0[ROI0 == T])/length(ROI0)) %>%
-    write_csv('ROIFTnum.csv')
+      mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
+      group_by(Sub, Cond, Item) %>% 
+      summarise(FixationNum = length(ROI0[ROI0 == T]), 
+                FixationProp = length(ROI0[ROI0 == T])/length(ROI0)) %>%
+      write_csv('ROIFTnum.csv')
     
     cat('FTROInum.csv has been produced','\n\n')
     
@@ -502,13 +496,13 @@ funROIfixationprop <-
     cat('Calculating the fixation proportion...\n')
     
     read_csv('FTtotalASRptReg.csv') %>% 
-    mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
-    filter(ROI0 == T) %>%
-    group_by(Sub, Cond, Item) %>% 
-    mutate(FixationIndex = 1:length(ROI0)) %>%
-    summarise(FixationProp = length(ffd0[FixationIndex == 1 & ffd0 == T])) %>%
-    write_csv('ROIFixationProp.csv')
-
+      mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
+      filter(ROI0 == T) %>%
+      group_by(Sub, Cond, Item) %>% 
+      mutate(FixationIndex = 1:length(ROI0)) %>%
+      summarise(FixationProp = length(ffd0[FixationIndex == 1 & ffd0 == T])) %>%
+      write_csv('ROIFixationProp.csv')
+    
     cat('ROI fixation proportion has been done','\n\n')
     
   }
@@ -525,12 +519,12 @@ funROIgazeduration <-
     cat('Calculating the first pass time...\n')
     
     read_csv('FTtotalASRptReg.csv') %>% 
-  mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
-  filter(passtimes == 1) %>%
-  group_by(Sub, Cond, Item) %>% 
-  summarise(GazeDuration = sum(FFT)) %>%
-  write_csv('ROIGazeDuration.csv')
-
+      mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
+      filter(passtimes == 1) %>%
+      group_by(Sub, Cond, Item) %>% 
+      summarise(GazeDuration = sum(FFT)) %>%
+      write_csv('ROIGazeDuration.csv')
+    
     cat('ROI gaze duration has been done','\n\n')
     
   }
@@ -810,12 +804,11 @@ funROIsecondFT <-
   }
 
 ###### skip rate
-funSkipRate <- function(outputdir)
-{
+funSkipRate <- function(outputdir){
   cat('Calculating the skip rate...\n')
   
   FTtotalASRptReg = read.csv(paste(outputdir, 'FTtotalASRptReg.csv', sep = '/'), stringsAsFactors = F)
-
+  
   FTtotalASRptReg %>% 
     filter(ROI0 == T) %>% 
     group_by(sub0, cond0, item0) %>% 
@@ -824,8 +817,8 @@ funSkipRate <- function(outputdir)
            Cond = cond0,
            Item = item0,
            skiprate = ifelse(ffd0Mean > 0, 1,0)) %>% 
-    select(-sub0, -cond0, -item0, -ffdMean) %>% 
-    write_csv('ROISkipRate.csv')
+    .[-c(1:4)] %>% 
+    write_csv(paste(outputdir,'/','ROISkipRate.csv',sep = ''))
   cat('Skip Rate is done!!!\n\n')
 }
 
@@ -902,8 +895,7 @@ Regressionoutto = function(workdir = getwd()){
 
 
 ###### integrate
-funIntegrate <-
-  function(workdir = getwd(),
+funIntegrate <- function(workdir = getwd(),
            outputdir = workdir,
            FDMax, FDMin,
            ROIfilename1,
@@ -1036,9 +1028,7 @@ funIntegrate <-
   }
 
 ###### GUI
-funGUI <-
-  function()
-  {
+funGUI <-function(){
     if(sum(unique(installed.packages()[,c('Package')] %in% 'tools')) == 0)
     {install.packages('tools')}
     if(sum(unique(installed.packages()[,c('Package')] %in% 'fgui')) == 0)
