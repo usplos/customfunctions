@@ -134,7 +134,7 @@ funDA12csv <-
 
 ###### preprocessing
 funpreprocess <-
-  function(workdir, FDMax = 1000, FDMin = 80, ROIfilename, outputdir)
+  function(workdir, FDMax = 1000, FDMin = 80, ROIfilename, outputdir, itemmax = 999)
   {
     # This function is aimed to tide the csv files of each subjects.
     # Files of all subjects will be tidied in to FTtotal.csv in which one line contains the basic information about one fixation point.
@@ -170,9 +170,9 @@ funpreprocess <-
       for(j in 1:nrow(tempsubfile)){
         templine = tempsubfile[j,]
         templine = templine[,!is.na(templine)]
-        if(ncol(templine) > 8 | templine[[3]] > 999) # edit
+        if(ncol(templine) > 8 | templine[[3]] > itemmax) # edit
         {
-          if(templine[[3]] < 999) # edit
+          if(templine[[3]] <= itemmax) # edit
           {
             numberfixation = (ncol(templine)-8)/4
             
@@ -209,7 +209,7 @@ funpreprocess <-
     {
       FTtotal$cond0[i] = FTtotal$cond0[i-1]
     }
-    largeitemp = which(FTtotal$item0 >= 999)
+    largeitemp = which(FTtotal$item0 >= itemmax)
     for(i in largeitemp)
     {
       FTtotal$item0[i] = FTtotal$item0[i-1]
