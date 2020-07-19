@@ -1,12 +1,11 @@
 ###### package check
 PackageCheck = function(Name)
 {
-  if (sum(unique(installed.packages()[, c("Package")] %in% 
+  if (sum(unique(installed.packages()[, c("Package")] %in%
                  Name)) == 0) {
     install.packages(Name)
   }
 }
-
 PackageCheck('dplyr');
 PackageCheck('purrr');
 PackageCheck('tidyr');
@@ -16,7 +15,26 @@ PackageCheck('readr')
 
 library(dplyr);library(purrr);library(tidyr);library(tibble);library(readr);library(ggplot2);
 
-##### SV
+seq_evermax = function(x){
+  Log = logical(length = length(x))
+  Log[1] = T
+  for (ii in 2:length(x)) {
+    Log[ii] = ifelse(x[ii] > max(x[1:(ii-1)]), T, F)
+  }
+  return(Log)
+}
+
+seq_sacdir = function(x){
+  Dir = character(length = length(x))
+  if(length(x) == 1){
+    Dir[1] = 'NO'
+  }else{
+    Dir = c(ifelse(x[-1] > x[-length(x)],'fore','back'),'NO')
+  }
+  return(Dir)
+}
+
+#### SV ####
 funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, baseline,
                  Ylab = 'DV', Xlab = 'IV', xp = perbinMax-(perbinMax-perbinMin)/5, Cex = 0.8, Bty = 'n',
                  Width = 680, Height = 370)
@@ -24,18 +42,19 @@ funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, 
   ########### package check
   PackageCheck = function(Name)
   {
-    if (sum(unique(installed.packages()[, c("Package")] %in% 
+    if (sum(unique(installed.packages()[, c("Package")] %in%
                    Name)) == 0) {
       install.packages(Name)
     }
-  
+  }
+
   DataRaw = read_csv(Data)
   CondUnique = unique(DataRaw[[2]])
-  } 
+
   for(i in CondUnique){
     eval(parse(text = paste(i,'perbin = matrix(0,nrow = bootstrapNumber, ncol = perbinMax-perbinMin+1)', sep = '')))
   }
-  
+
   for(condition in CondUnique){
     CondTemp = matrix(0, nrow = bootstrapNumber, ncol = perbinMax - perbinMin+1)
     DataRawSS = filter(DataRaw ,DataRaw[[2]] %in% condition)
@@ -44,7 +63,7 @@ funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, 
     {
       DataRawS = DataRawSS %>% filter(DataRawSS[[1]] %in% subject)
       SubCondTemp = matrix(0, nrow = bootstrapNumber, ncol = perbinMax - perbinMin+1)
-      for (i in 1:bootstrapNumber) 
+      for (i in 1:bootstrapNumber)
       {
         SubCondTempOnce = sort(sample(DataRawS[[3]], size = nrow(DataRawS), replace = T))
         SubCondTempOnceProp = numeric()
@@ -52,7 +71,7 @@ funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, 
         {
           checkn=which(perbinMin:perbinMax %in% n)
           SubCondTempOnceProp[checkn] = mean(SubCondTempOnce > n)
-          
+
         }
         SubCondTemp[i,] = SubCondTempOnceProp
       }
@@ -63,7 +82,7 @@ funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, 
     remove(CondTemp)
     cat(condition, ' is done\n###############################################################\n')
   }
-  
+
   CondCompare = eval(parse(text = paste(CondUnique[-1 * which(CondUnique %in% baseline)],'perbin - ', baseline,'perbin', sep = '')));
   Differ = numeric(perbinMax - perbinMin +1)
   for(i in 1:(perbinMax - perbinMin +1))
@@ -78,7 +97,7 @@ funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, 
       check = 1;break
     }
   }
-   if(check == 1)
+  if(check == 1)
   {
     cat('The first time point is ',TimePoint,' ms.\n')
     eval(parse(text = paste(CondUnique[-1 * which(CondUnique %in% baseline)],'perbinA = numeric()', sep = '')))
@@ -88,9 +107,9 @@ funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, 
       eval(parse(text = paste(CondUnique[-1 * which(CondUnique %in% baseline)],'perbinA[i] = mean(',CondUnique[-1 * which(CondUnique %in% baseline)],'perbin[,i])', sep = '')))
       eval(parse(text = paste(baseline,'perbinA[i] = mean(',baseline,'perbin[,i])', sep = '')))
     }
-    
+
     eval(parse(text = paste('file = tibble(',baseline,' = ',baseline,'perbinA',', ',CondUnique[-1 * which(CondUnique %in% baseline)],' = ',CondUnique[-1 * which(CondUnique %in% baseline)], 'perbinA)',sep = '')))
-    
+
     eval(parse(text = 'filename = paste(substr(Data, 1, nchar(Data)-4),\'_\',baseline, CondUnique[-1 * which(CondUnique %in% baseline)], \'.csv\',sep = \'\')'))
     write_csv(file, filename);write_csv(tibble(TIMEPOINT = TimePoint), paste(substr(Data,1,nchar(Data)-4),'_TimePoint.csv',sep = ''))
     bmp(paste(substr(Data, 1, nchar(Data)-4), '.bmp',sep = ''), width = Width, height = Height)
@@ -106,17 +125,17 @@ funSV = function(Data, bootstrapNumber = 10000, perbinMax = 600, perbinMin = 0, 
   {
     cat('There is no seperation.\nSurvival analysis is finished\n',rep('#################',3))
   }
-  
+
 }
 
-###### DA12csv
+#### DA12csv ####
 funDA12csv <-
   function()
   {
     # convert the DA1 files to csv files
     # the DA1 files should be names as Sub*.DA1
     # the DA1 files should be in current working directory
-    
+
     DA1filename = dir(pattern = '[Ss]*')
     DA1filename = DA1filename[grep('*.DA1',DA1filename)]
     if(length(DA1filename) == 0)
@@ -128,13 +147,13 @@ funDA12csv <-
         cat(ida1,'is done\n')
       }
       cat('DA1 to csv convert is done!\n\n')
-      
+
     }
   }
 
-###### preprocessing
+#### preprocessing ####
 funpreprocess <-
-  function(workdir, FDMax = 1000, FDMin = 80, ROIfilename, outputdir, itemmax = 999)
+  function(workdir, FDMax = 1000, FDMin = 80, ROIfilename, outputdir)
   {
     # This function is aimed to tide the csv files of each subjects.
     # Files of all subjects will be tidied in to FTtotal.csv in which one line contains the basic information about one fixation point.
@@ -148,10 +167,10 @@ funpreprocess <-
     # FDMin - numeric indicating the shortest duration of fixation point you want to remain
     # ROIfilename - a character string indicating the name ROI location file
     # outputdir - a character string indicating where you want to put out the FTtotal*.csv files
-    
+
     setwd(workdir)
     cat('Now preprocessing is done...\n')
-    
+
     csvfilename = dir(pattern = "Sub*")
     csvfilename = csvfilename[grep('*.csv',csvfilename)]
     sub0 = c()
@@ -161,22 +180,25 @@ funpreprocess <-
     ycoor0 = c()
     Tstart0 = c()
     Tend0 = c()
-    
-    for(i in csvfilename){
+
+    for(i in csvfilename)
+    {
       tempsubfile = read.csv(i, sep = ' ', header = F)
       if(ncol(tempsubfile) <2){
         tempsubfile = read.csv(i, sep = '\t', header = F)
       }
-      for(j in 1:nrow(tempsubfile)){
+      for(j in 1:nrow(tempsubfile))
+      {
         templine = tempsubfile[j,]
         templine = templine[,!is.na(templine)]
-        if(ncol(templine) > 8 | templine[[3]] > itemmax) # edit
+        if(ncol(templine) > 8 | templine[[3]] > 199)
         {
-          if(templine[[3]] <= itemmax) # edit
+          if(templine[[3]] < 199)
           {
             numberfixation = (ncol(templine)-8)/4
-            
-            for(k in 1:numberfixation){
+
+            for(k in 1:numberfixation)
+            {
               sub0 = c(sub0, substr(i,1,nchar(i)-4))
               cond0 = c(cond0, templine[[2]])
               item0 = c(item0, templine[[3]])
@@ -185,9 +207,12 @@ funpreprocess <-
               Tstart0 = c(Tstart0, templine[[4*k+7]])
               Tend0 = c(Tend0, templine[[4*k+8]])
             }
-          }else{
+          }
+          else
+          {
             numberfixation = ncol(templine)/4
-            for(k in 1:numberfixation){
+            for(k in 1:numberfixation)
+            {
               sub0 = c(sub0, substr(i,1,nchar(i)-4))
               cond0 = c(cond0, templine[j-1,][[2]])
               item0 = c(item0, tempsubfile[j-1,][[3]])
@@ -197,154 +222,63 @@ funpreprocess <-
               Tend0 = c(Tend0, templine[[4*k]])
             }
           }
-        } 
+        }
       }
       cat("\015")
       cat(i,' has been done!!',"\n")
     }
-    
+
     FTtotal = data.frame(sub0,cond0,item0,xcoor0,ycoor0,Tstart0,Tend0, stringsAsFactors = F)
     naposition = which(is.na(FTtotal$cond0))
     for(i in naposition)
     {
       FTtotal$cond0[i] = FTtotal$cond0[i-1]
     }
-    largeitemp = which(FTtotal$item0 >= itemmax)
+    largeitemp = which(FTtotal$item0 >= 199)
     for(i in largeitemp)
     {
       FTtotal$item0[i] = FTtotal$item0[i-1]
     }
-    
+
     write.csv(FTtotal,paste(outputdir,'FTtotal.csv',sep = '/'),row.names = F, quote = F)
     FTtotal = read.csv(paste(outputdir,'FTtotal.csv',sep = '/'), stringsAsFactors = F)
     cat('FTtotal.csv has been produced','\n')
-    
-    
-    FTtotal = within(FTtotal,{
-      finalcoor = NA
-      finalcoor = xcoor0+ycoor0*160
-      finalcoor = as.integer(finalcoor)
-    })
-    
-    subindex = unique(FTtotal$sub0)
-    ffd0 = c()
-    FFT = c()
-    ROI0 = c()
-    sacdir = c()
-    checkffd = c()
-    library(rio)
+
+    FTtotal['finalcoor'] = FTtotal$xcoor0+FTtotal$ycoor0*160 # finalcoor
+
     ROI = import(ROIfilename)
-    ROI[is.na(ROI),is.na(ROI)]=-1
-    for(i in subindex)
-    {
-      ffd1 = length(ffd0)
-      cat(i,' is doing...............','\n')
-      tempsub = FTtotal[FTtotal$sub0 %in% i,]
-      #shouldlength = nrow(tempsub)
-      #checklength1 = length(ffd0)
-      itemindex = unique(tempsub$item0)
-      for(j in itemindex)
-      {
-        
-        ffd1 = length(ffd0)
-        #cat(j,' is doing\n')
-        # n == 1
-        tempitem = tempsub[tempsub$item0 %in% j,]
-        #shouldlength = nrow(tempitem)
-        #checklength1 = length(ffd0)
-        xmax = 0
-        if(nrow(tempitem) > 1)
-        {
-          templine1 = tempitem[1,]
-          templine2 = tempitem[2,]
-          xmax = templine1$finalcoor[[1]]
-          #ffd0
-          ffd0 = c(ffd0, T)
-          #FFT
-          FFT = c(FFT, templine1$Tend0[[1]] - templine1$Tstart0[[1]])
-          #sacdir
-          x1 = templine1$finalcoor[[1]]
-          x2 = templine2$finalcoor[[1]]
-          sacdir = c(sacdir, ifelse(x2 > x1, 'fore','back'))
-          #ROI0
-          temproi = ROI[ROI$item == templine1$item0 & ROI$condition == templine1$cond0,][3:ncol(ROI)]
-          ROI0 = c(ROI0, ifelse(x1 %in% temproi, T, F))
-          #2 - n
-          fnumber = nrow(tempitem)
-          if(fnumber>1)
-          {
-            for(k in 2:fnumber)
-            {
-              templinen = tempitem[k,]
-              xn = templinen$finalcoor[[1]]
-              #ffd0
-              if(xn > xmax)
-              {
-                ffd0 = c(ffd0,T)
-                xmax = xn
-              }
-              else
-              {
-                ffd0 = c(ffd0,F)
-              }
-              #FFT
-              FFT = c(FFT, templinen$Tend0[[1]] - templinen$Tstart0[[1]])
-              #sacdir
-              if(k < fnumber)
-              {
-                templinenp1 = tempitem[k+1,]
-                xp1 = templinenp1$finalcoor[[1]]
-                sacdir = c(sacdir, ifelse(xp1 > xn, 'fore', 'back'))
-              }
-              else
-              {
-                sacdir = c(sacdir, "NO")
-              }
-              #ROI
-              temproi = ROI[ROI$item == templinen$item0 & ROI$condition == templinen$cond0,][3:ncol(ROI)]
-              ROI0 = c(ROI0, ifelse(xn %in% temproi, T, F))
-            }
-          }
-        }
-        else
-        {
-          ffd0 = c(ffd0,'T')
-          templine1 = tempitem[1,]
-          xn = templine1$finalcoor[[1]]
-          FFT = c(FFT, templine1$Tend0[[1]] - templine1$Tstart0[[1]])
-          sacdir = c(sacdir,'NO')
-          temproi = ROI[ROI$item == templinen$item0 & ROI$condition == templinen$cond0,][3:ncol(ROI)]
-          ROI0 = c(ROI0, ifelse(xn %in% temproi, T, F))
-        }
-        checkffd = c(checkffd, length(ffd0) - ffd1)
-        
-      }
-      #checklength2 = length(ffd0)
-      #if((checklength2 - checklength1) != shouldlength)
-      #{
-      #  break()
-      #}
-      cat(i,' has been done!!!!','\n')
-    }
-    
-    FTtotalA = cbind(FTtotal, ffd0, FFT, ROI0, sacdir)
+    FTtotal['ROI0'] = F
+    for (rr in 1:nrow(ROI)) {
+      #rr=1
+      FTtotal$ROI0[FTtotal$cond0 == ROI$condition[rr] & FTtotal$item0 == ROI$item[rr]] =
+        FTtotal$finalcoor[FTtotal$cond0 == ROI$condition[rr] & FTtotal$item0 == ROI$item[rr]] %in% as.numeric(ROI[rr,3:ncol(ROI)])
+    } # ROI
+
+    FTtotal['FFT'] = FTtotal$Tend0 - FTtotal$Tstart0 # FFT
+
+    FTtotal = FTtotal %>% group_by(sub0, cond0, item0) %>% mutate(ffd0 = seq_evermax(finalcoor)) # ffd0
+
+    FTtotal = FTtotal %>% group_by(sub0, cond0, item0) %>% mutate(sacdir = seq_sacdir(finalcoor)) # sacdir
+
+
+    FTtotalA = FTtotal
     write.csv(FTtotalA, paste(outputdir, 'FTtotalA.csv',sep = '/'), row.names = F, quote = F)
     cat('FTtotalA.csv has been produced','\n')
-    
-    
+
+
     FTtotalAS = FTtotalA[FTtotalA$FFT %in% FDMax:FDMin,]
     write.csv(FTtotalAS, paste(outputdir, 'FTtotalAS.csv', sep = '/'),row.names = F, quote = F)
     cat('FTtotalAS.csv has been produced','\n')
-    
-    
+
+
     FTtotalASR = FTtotalAS[FTtotalAS$ROI0 == T,]
     write.csv(FTtotalASR, paste(outputdir,'FTtotalASR.csv',sep = '/'), row.names = F, quote = F)
     cat('FTtotalASR.csv has been produced','\n')
     cat('Preprocessing has been done','\n\n')
-    
-    
+
+
     cat('Calculating the ROI passing times...\n')
-    
+
     FTtotalAS = read.csv(paste(outputdir, 'FTtotalAS.csv', sep = '/'), stringsAsFactors = F)
     FTtotalASRpt = within(FTtotalAS,{
       passtimes = NA
@@ -386,9 +320,9 @@ funpreprocess <-
     FTtotalASRpt$passtimes[which(is.na(FTtotalASRpt$passtimes))] = passtimes
     write.csv(FTtotalASRpt, paste(outputdir, 'FTtotalASRpt.csv', sep = '/'), quote = F, row.names = F)
     cat('FTtotalASRpt.csv has been done','\n\n')
-    
+
     cat('Calculating whether regression was existed...\n')
-    
+
     FTtotalASRpt = read.csv(paste(outputdir,'FTtotalASRpt.csv', sep = '/'), stringsAsFactors = F)
     FTtotalASRptReg = within(FTtotalASRpt, {
       regressionfrom = NA
@@ -435,10 +369,10 @@ funpreprocess <-
     FTtotalASRptReg$regressionfrom[is.na(FTtotalASRptReg$regressionfrom)] = regression
     write.csv(FTtotalASRptReg, paste(outputdir, 'FTtotalASRptReg.csv', sep = '/'), row.names = F, quote = F)
     cat('FTtotalASRptReg.csv has been done','\n\n')
-    
+
   }
 
-###### FFD & TT Refined
+#### FFD & TT Refined ####
 funROITTFFD <-
   function(outputdir)
   {
@@ -446,23 +380,23 @@ funROITTFFD <-
     # based on FTtoalASR.csv
     # outputdir - a character string indicating where you want to put out the result file
     # FTtotalASR.csv should be in current working directory
-    
+
     cat('Calculating the first fixation duration and total time...\n')
-    
-    read_csv('FTtotalASRptReg.csv') %>% 
+
+    read_csv('FTtotalASRptReg.csv') %>%
       mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
-      filter(ROI0 == T) %>% 
-      group_by(Sub, Cond, Item) %>% 
-      mutate(ROIFI = 1:length(FFT)) %>% 
-      select(-xcoor0, -ycoor0, -Tstart0, -Tend0) %>% 
+      filter(ROI0 == T) %>%
+      group_by(Sub, Cond, Item) %>%
+      mutate(ROIFI = 1:length(FFT)) %>%
+      select(-xcoor0, -ycoor0, -Tstart0, -Tend0) %>%
       summarise(TotalTime = sum(FFT), FFD = FFT[ROIFI == 1]) %>%
       write_csv('ROITT&FFD.csv')
-    
+
     cat('Totaltime and first fixation duration have been done','\n\n')
-    
+
   }
 
-###### ROInum refined
+#### ROInum refined ####
 funFTROInum <-
   function(outputdir)
   {
@@ -470,21 +404,21 @@ funFTROInum <-
     # based on FTtotalAS.csv
     # outputdir - a character string indicating where you want to put out the result file
     # FTtotalAS.csv should be in current working directory
-    
+
     cat('Calculating the number of fixation potint in ROI...\n')
-    
-    read_csv('FTtotalASRptReg.csv') %>% 
+
+    read_csv('FTtotalASRptReg.csv') %>%
       mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
-      group_by(Sub, Cond, Item) %>% 
-      summarise(FixationNum = length(ROI0[ROI0 == T]), 
+      group_by(Sub, Cond, Item) %>%
+      summarise(FixationNum = length(ROI0[ROI0 == T]),
                 FixationProp = length(ROI0[ROI0 == T])/length(ROI0)) %>%
       write_csv('ROIFTnum.csv')
-    
+
     cat('FTROInum.csv has been produced','\n\n')
-    
+
   }
 
-###### fixationprop refined
+#### fixationprop refined ####
 funROIfixationprop <-
   function(outputdir)
   {
@@ -492,22 +426,22 @@ funROIfixationprop <-
     # based on FTtotalASRptReg.csv file
     # outputdir - a character string where you want to put out the result file
     # FTtotalASRptReg.csv should be in current working directory
-    
+
     cat('Calculating the fixation proportion...\n')
-    
-    read_csv('FTtotalASRptReg.csv') %>% 
+
+    read_csv('FTtotalASRptReg.csv') %>%
       mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
       filter(ROI0 == T) %>%
-      group_by(Sub, Cond, Item) %>% 
+      group_by(Sub, Cond, Item) %>%
       mutate(FixationIndex = 1:length(ROI0)) %>%
       summarise(FixationProp = length(ffd0[FixationIndex == 1 & ffd0 == T])) %>%
       write_csv('ROIFixationProp.csv')
-    
+
     cat('ROI fixation proportion has been done','\n\n')
-    
+
   }
 
-###### gazeduration
+#### gazeduration ####
 funROIgazeduration <-
   function(outputdir)
   {
@@ -515,21 +449,21 @@ funROIgazeduration <-
     # based on FTtotalASRptReg.csv file
     # outputdir - a character string indicating where you want to put out the result files
     # FTtotalASRptReg.csv should be in current working directory
-    
+
     cat('Calculating the first pass time...\n')
-    
-    read_csv('FTtotalASRptReg.csv') %>% 
+
+    read_csv('FTtotalASRptReg.csv') %>%
       mutate(Sub = sub0, Cond = cond0, Item = item0) %>%
       filter(passtimes == 1) %>%
-      group_by(Sub, Cond, Item) %>% 
+      group_by(Sub, Cond, Item) %>%
       summarise(GazeDuration = sum(FFT)) %>%
       write_csv('ROIGazeDuration.csv')
-    
+
     cat('ROI gaze duration has been done','\n\n')
-    
+
   }
 
-###### regression in
+#### regression in ####
 funROIregressionin <-
   function(outputdir)
   {
@@ -537,9 +471,9 @@ funROIregressionin <-
     # based on FTtotalASRepReg.csv
     # outputdir - a character string indicating where you want put out the result file
     # FTtotalASRptReg.csv should be in current working directory
-    
+
     cat('Calculating the ROI regression in...\n')
-    
+
     FTtotalASRptReg = read.csv(paste(outputdir, 'FTtotalASRptReg.csv', sep = '/'), stringsAsFactors = F)
     Sub = c()
     Item = c()
@@ -579,10 +513,10 @@ funROIregressionin <-
     ROIrightregressionin = data.frame(Sub, Item, Cond, ReginRight, ReginRightFF, stringsAsFactors = F)
     write.csv(ROIrightregressionin, paste(outputdir, 'ROIrightregressionIn.csv', sep = '/'), row.names = F, quote = F)
     cat('ROI regression has been done','\n\n')
-    
+
   }
 
-###### regression out
+#### regression out ####
 funROIregressionout <-
   function(outputdir)
   {
@@ -590,9 +524,9 @@ funROIregressionout <-
     # based on FTtotalASRptReg.csv file
     # outputdir - a character string indicating where you want to put out the result file
     # FTtotalASRptReg.csv should be in current working directory
-    
+
     cat('Calculating the ROI regression out...\n')
-    
+
     FTtotalASRptReg = read.csv(paste(outputdir, 'FTtotalASRptReg.csv', sep = '/'), stringsAsFactors = F)
     Sub = c()
     Item = c()
@@ -614,7 +548,7 @@ funROIregressionout <-
         regout = 0
         if(length(NAposition)>0)
         {
-          
+
           for(k in NAposition)
           {
             if(k < nrow(tempitem) & tempitem$passtimes[k+1] == 0 & tempitem$sacdir[k] %in% 'back')
@@ -643,10 +577,10 @@ funROIregressionout <-
     ROIregressionout = data.frame(Sub, Item,Cond,Regressionout, FPregressionout = FFregressionout, stringsAsFactors = F)
     write.csv(ROIregressionout, paste(outputdir,'ROIregressionout.csv', sep = '/'), row.names = F, quote = F)
     cat('ROI regression out has been done','\n\n')
-    
+
   }
 
-###### saccade length
+#### saccade length ####
 funROIsaccadelength <-
   function(outputdir)
   {
@@ -654,9 +588,9 @@ funROIsaccadelength <-
     # based on FTtotalASRptReg.csv file
     # outputdir - a character string indicating where you want to put out the result file
     # FTtotalASRptReg.csv should be in current working directory
-    
+
     cat('Calculating the saccade length...\n')
-    
+
     FTtotalASRptReg = read.csv(paste(outputdir, 'FTtotalASRptReg.csv', sep = '/'), stringsAsFactors = F)
     Sub = c()
     Item = c()
@@ -680,7 +614,7 @@ funROIsaccadelength <-
         if(length(FFTposition0)> 0)
         {
           FFTposition = FFTposition0[1]
-          
+
           if(FFTposition > 1)
           {
             if(tempitem$sacdir[FFTposition-1] %in% 'fore')
@@ -689,7 +623,7 @@ funROIsaccadelength <-
             {saccadelengthinL = c(saccadelengthinL,NA)}
           }else
           {saccadelengthinL = c(saccadelengthinL,NA)}
-          
+
           if(FFTposition > 1)
           {
             if(tempitem$sacdir[FFTposition-1] %in% 'back')
@@ -698,9 +632,9 @@ funROIsaccadelength <-
             {saccadelengthinR = c(saccadelengthinR,NA)}
           }else
           {saccadelengthinR = c(saccadelengthinR,NA)}
-          
+
           FFTposition = FFTposition0[length(FFTposition0)]
-          
+
           if(FFTposition < nrow(tempitem))
           {
             if(tempitem$sacdir[FFTposition] %in% 'fore')
@@ -709,7 +643,7 @@ funROIsaccadelength <-
             {saccadelengthoutR = c(saccadelengthoutR,NA)}
           }else
           {saccadelengthoutR = c(saccadelengthoutR,NA)}
-          
+
           if(FFTposition < nrow(tempitem))
           {
             if(tempitem$sacdir[FFTposition] %in% 'back')
@@ -718,7 +652,7 @@ funROIsaccadelength <-
             {saccadelengthoutL = c(saccadelengthoutL,NA)}
           }else
           {saccadelengthoutL = c(saccadelengthoutL,NA)}
-          
+
         }else
         {
           saccadelengthinL = c(saccadelengthinL,NA)
@@ -726,17 +660,17 @@ funROIsaccadelength <-
           saccadelengthoutL = c(saccadelengthoutL, NA)
           saccadelengthoutR = c(saccadelengthoutR, NA)
         }
-        
+
       }
       cat(i,'has been done!!!','\n')
     }
     ROIsaccadelength = data.frame(Sub, Item, Cond,saccadelengthinL,saccadelengthinR,saccadelengthoutL,saccadelengthoutR, stringsAsFactors = F)
     write.csv(ROIsaccadelength, paste(outputdir,'ROIsaccadelength.csv', sep = '/'), row.names = F, quote = F,na = '')
     cat('ROI saccade length is done\n\n')
-    
+
   }
 
-###### second fixation time
+#### second fixation time ####
 funROIsecondFT <-
   function(outputdir)
   {
@@ -744,9 +678,9 @@ funROIsecondFT <-
     # based on FTtotalASRepReg.csv
     # outputdir - a character string indicating where you want to put out the result file
     # FTtotalASRptReg.csv should be in current working directory
-    
+
     cat('Calculating the second pass time...\n')
-    
+
     FTtotalASRptReg = read.csv(paste(outputdir, 'FTtotalASRptReg.csv', sep = '/'), stringsAsFactors = F)
     Sub = c()
     Item = c()
@@ -774,7 +708,7 @@ funROIsecondFT <-
         {
           SecondFT2 = c(SecondFT2, sum(tempsecFT$FFT))
         }
-        
+
         tempsecFT = tempitem[tempitem$passtimes %in% 3,]
         if(is.na(tempsecFT$FFT[1]))
         {
@@ -784,7 +718,7 @@ funROIsecondFT <-
         {
           SecondFT3 = c(SecondFT3, sum(tempsecFT$FFT))
         }
-        
+
         tempsecFT = tempitem[tempitem$passtimes %in% 4,]
         if(is.na(tempsecFT$FFT[1]))
         {
@@ -800,29 +734,30 @@ funROIsecondFT <-
     ROIsecondFT = data.frame(Sub, Item, Cond, SecondFT2, SecondFT3, SecondFT4, stringsAsFactors = F)
     write.csv(ROIsecondFT, paste(outputdir,'ROIsecondFT.csv', sep = '/'), row.names = F, quote = F)
     cat('ROI second fixation duration has been done','\n\n')
-    
+
   }
 
-###### skip rate
-funSkipRate <- function(outputdir){
+#### skip rate ####
+funSkipRate <- function(outputdir)
+{
   cat('Calculating the skip rate...\n')
-  
+
   FTtotalASRptReg = read.csv(paste(outputdir, 'FTtotalASRptReg.csv', sep = '/'), stringsAsFactors = F)
-  
-  FTtotalASRptReg %>% 
-    filter(ROI0 == T) %>% 
-    group_by(sub0, cond0, item0) %>% 
-    summarise(ffd0Mean = mean(ffd0)) %>% 
+
+  FTtotalASRptReg %>%
+    filter(ROI0 == T) %>%
+    group_by(sub0, cond0, item0) %>%
+    summarise(ffd0Mean = mean(ffd0)) %>%
     mutate(Sub = sub0,
            Cond = cond0,
            Item = item0,
-           skiprate = ifelse(ffd0Mean > 0, 1,0)) %>% 
-    .[-c(1:4)] %>% 
-    write_csv(paste(outputdir,'/','ROISkipRate.csv',sep = ''))
+           skiprate = ifelse(ffd0Mean > 0, 1,0)) %>%
+    select(-sub0, -cond0, -item0, -ffdMean) %>%
+    write_csv('ROISkipRate.csv')
   cat('Skip Rate is done!!!\n\n')
 }
 
-###### regression out position
+#### regression out position ####
 Regressionoutto = function(workdir = getwd()){
   cat('Calculating regression out position...\n')
   setwd(workdir)
@@ -834,7 +769,7 @@ Regressionoutto = function(workdir = getwd()){
     if(length(ps1) > 0){ps1 = ps1[length(ps1)]; check = T
     ps2 = which(df$passtimes %in% 2)
     ps2 = ifelse(length(ps2) != 0, ps2[1], nrow(df))
-    
+
     if(isTRUE(check) & ps2 >= ps1){
       subdf = df[ps1:ps2,]
       posi = which(subdf$sacdir %in% 'back')
@@ -847,14 +782,14 @@ Regressionoutto = function(workdir = getwd()){
     }else{return(-1)}
     }else{return(-1)}
   }
-  
+
   subsetROI = function(df){
     check = F
     ps1 = which(df$passtimes %in% 1)
     if(length(ps1) > 0){ps1 = ps1[length(ps1)]; check = T
     ps2 = which(df$passtimes %in% 2)
     ps2 = ifelse(length(ps2) != 0, ps2[1], nrow(df))
-    
+
     if(isTRUE(check) & ps2 >= ps1){
       subdf = df[ps1:ps2,]
       posi = which(subdf$sacdir %in% 'back')
@@ -867,7 +802,7 @@ Regressionoutto = function(workdir = getwd()){
     }else{return(F)}
     }else{return(F)}
   }
-  
+
   subsetinte = function(df){
     a = tibble(Sub = df$sub0[[1]],
                Cond = df$cond0[[1]],
@@ -888,14 +823,15 @@ Regressionoutto = function(workdir = getwd()){
     }
     cat(sub1,' is done...\n')
   }
-  
+
   write_csv(regressionoutto, 'regressionoutto.csv')
   cat('regression out position is done!!\n')
 }
 
 
-###### integrate
-funIntegrate <- function(workdir = getwd(),
+#### integrate ####
+funIntegrate <-
+  function(workdir = getwd(),
            outputdir = workdir,
            FDMax, FDMin,
            ROIfilename1,
@@ -928,7 +864,7 @@ funIntegrate <- function(workdir = getwd(),
     # SecondPassTime - logical indicating whether to calculating the second pass time through ROI
     # FixationProportion - logical indicating whether to calculating the fixation proportion when passing ROI first time
     # DataIntegrate - logical whether to integrate all the result files into one result file
-    
+
     # check whether the rio package has been downloaded
     if(sum(unique(installed.packages()[,c('Package')] %in% 'rio')) == 0)
     {install.packages('rio')}
@@ -954,7 +890,7 @@ funIntegrate <- function(workdir = getwd(),
           funROITTFFD(i)
           #cat('Total time and First fixation duration is done!\n\n')
           #print(i)
-          
+
         }
         if(FTnum == T)
         {
@@ -999,7 +935,7 @@ funIntegrate <- function(workdir = getwd(),
         }
         if(DataIntegrate == T)
         {
-          
+
           setwd(i)
           datafilename = dir(pattern = 'ROI[a-zA-Z]')
           datafilename = datafilename[grep('.csv', datafilename)]
@@ -1018,7 +954,7 @@ funIntegrate <- function(workdir = getwd(),
             }
             export(ROItotal, paste(i, 'ROITotal.csv', sep = '/'))
             cat('Data Integrate is done!\n\n')
-            
+
           }
         }
         cat('Congratulations!!!\n\n')
@@ -1028,7 +964,9 @@ funIntegrate <- function(workdir = getwd(),
   }
 
 ###### GUI
-funGUI <-function(){
+funGUI <-
+  function()
+  {
     if(sum(unique(installed.packages()[,c('Package')] %in% 'tools')) == 0)
     {install.packages('tools')}
     if(sum(unique(installed.packages()[,c('Package')] %in% 'fgui')) == 0)
