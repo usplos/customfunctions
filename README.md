@@ -1,5 +1,9 @@
 # README
 本项目主要用于介绍一下自己平时编写的小程序、共享的数据以及整理的资料
+
+## fMRi四维数据转化为三维数据 20201025
+参见[`code4Dto3D.m`](https://github.com/usplos/customfunctions/blob/master/code4Dto3D.m)
+
 ## 快速编程(眼动快速编程)
 
 参见[`fastprogramming.md`](https://github.com/usplos/self-programming/blob/master/fastprogramming.md)
@@ -18,3 +22,4 @@
 ## 单因素、两因素、三因素的条形图和交互作用图绘制
 
 参见[`Custom barplot and interactionplot.md`](https://github.com/usplos/self-programming/blob/master/Custom%20barplot%20and%20interactionplot.md)
+
