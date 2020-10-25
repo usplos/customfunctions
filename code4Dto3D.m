@@ -1,4 +1,5 @@
-Funpattern = 'FunImg*'; % Set the pattern of the folders where Functional Images are
+clear;clc
+Funpattern = '*FunImg'; % Set the pattern of the folders where Functional Images are
 Subpattern = 'Sub*'; % Set the pattern of the folders for each subjects
 %%
 Funfolders = dir(Funpattern);
